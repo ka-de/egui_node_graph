@@ -652,6 +652,7 @@ where
             Stroke::new(2.0 * pan_zoom.zoom, text_color);
 
         // Preallocate shapes to paint below contents
+        let shadow_shape = ui.painter().add(Shape::Noop);
         let outline_shape = ui.painter().add(Shape::Noop);
         let background_shape = ui.painter().add(Shape::Noop);
 
@@ -1063,7 +1064,7 @@ where
         // NOTE: This code is a bit more involved than it needs to be because egui
         // does not support drawing rectangles with asymmetrical round corners.
 
-        let (shape, outline) = {
+        let (shadow, shape, outline) = {
             let rounding_radius = 4.0 * pan_zoom.zoom;
             let rounding = Rounding::same(rounding_radius);
 
@@ -1126,12 +1127,29 @@ where
                 Shape::Noop
             };
 
+            let shadow = Shape::Rect(RectShape {
+                rect: node_rect
+                    .expand(1.0 * pan_zoom.zoom)
+                    .translate(Vec2::splat(5.0)),
+                rounding,
+                fill: Color32::BLACK,
+                stroke: Stroke::NONE,
+                blur_width: 20.0,
+                fill_texture_id: Default::default(),
+                uv: Rect::ZERO,
+            });
+
             // Take note of the node rect, so the editor can use it later to compute intersections.
             self.node_rects.insert(self.node_id, node_rect);
 
-            (Shape::Vec(vec![titlebar, body, bottom_body]), outline)
+            (
+                shadow,
+                Shape::Vec(vec![titlebar, body, bottom_body]),
+                outline,
+            )
         };
 
+        ui.painter().set(shadow_shape, shadow);
         ui.painter().set(background_shape, shape);
         ui.painter().set(outline_shape, outline);
 
